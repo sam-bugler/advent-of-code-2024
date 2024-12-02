@@ -1,12 +1,11 @@
 use std::iter::zip;
 
 pub fn process(input: &str) -> u32 {
-    // let rows = input.lines().count();
     let mut left: Vec<u32> = Vec::new();
     let mut right: Vec<u32> = Vec::new();
 
     for line in input.lines() {
-        let mut numbers = line.split_whitespace().into_iter();
+        let mut numbers = line.split_whitespace();
         
         if let Some(number) = numbers.next() {
             left.push(number.parse::<u32>().expect("Error parsing left number"))
