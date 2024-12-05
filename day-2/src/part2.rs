@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-// todo! - solution producing result too low, unit tests are passing, revisit!!
-
 pub fn process(input: &str) -> usize {
     let reports = input
         .trim()
@@ -46,7 +44,8 @@ enum GradedReport {
 }
 
 impl GradedReport {
-    fn validate_unidirectional(levels: &[u8]) -> Result<(), u8> {
+    
+    fn validate_unidirectional(levels: &[u8]) -> bool{
 
         let diffs = levels
             .windows(2)
@@ -54,57 +53,42 @@ impl GradedReport {
                 i8::try_from(i[0]).expect("Failed to parse into signed integer"),
                 i8::try_from(i[1]).expect("Failed to parse into signed integer"),
             ])
-            .map(|i| (i[0], i[1] - i[0]))
+            .map(|i| i[1] - i[0])
             .collect::<Vec<_>>();
         
-        let mut iter = diffs.iter().peekable();
-        
-        while let Some(i) = iter.next() {
-            if let Some(next) = iter.peek() {
-                let delta = i.1 * next.1;
-                if delta < 0 {
-                    return Err(next.0 as u8)
-                }
-            }
-        };
-        Ok(())
+        diffs
+            .windows(2)
+            .map(|i| i[0] * i[1])
+            .all(|i| i > 0)
     }
 
-    fn validate_difference(levels: &[u8]) -> Result<(), u8> {
+    fn validate_difference(levels: &[u8]) -> bool {
         levels.windows(2)
-            .map(|i| (i[0], i[0].abs_diff(i[1])))
-            .try_for_each(|(level, diff)| {
-                match 0 < diff && diff <= 3 {
-                    true => Ok(()),
-                    false => Err(level)
-                }
-            })
+            .map(|i| i[0].abs_diff(i[1]))
+            .all(|diff| diff <= 3)
     }
 }
 
 impl From<Report> for GradedReport {
-    fn from(value: Report) -> Self {
-        let mut report = value;
-
-        let validate = | report: &Report | {
-            Ok(())
-                .and(Self::validate_unidirectional(&report.levels))
-                .and(Self::validate_difference(&report.levels))
+    fn from(report: Report) -> Self {
+        
+        let validate = |levels: &[u8] | {
+            Self::validate_difference(levels) && Self::validate_unidirectional(levels)
+        };
+        
+        let bruteforce_retry = |levels: &[u8]| {
+            (0..levels.len()).any(|ptr| {
+                let mut levels = report.levels.clone();
+                levels.remove(ptr);
+                validate(&levels)
+            })
         };
 
-        let result = validate(&report)
-            .or_else(|level| {
-                println!("error with report {:?} at {:?}", report.levels, level);
-                if let Some(position) = report.levels.iter().position(|i| *i == level) {
-                    report.levels.remove(position);
-                    println!("report dampened, new report: {:?}", report.levels)
-                }
-                validate(&report)
-            });
+        let result = validate(&report.levels) || bruteforce_retry(&report.levels);
 
         match result {
-            Ok(_) => Self::Safe(report),
-            Err(_) => Self::Unsafe(report)
+            true => Self::Safe(report),
+            false => Self::Unsafe(report)
         }
     }
 }
