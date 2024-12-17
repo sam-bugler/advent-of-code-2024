@@ -70,7 +70,7 @@ impl WordGrid {
     }
 
     fn walk(&mut self, search_term: &mut SearchTerm, direction: &PeekDirection) -> bool {
-        while let (Some(char), Some(search_char)) = (self.peek_2(direction), search_term.increment_pointer_2()) {
+        while let (Some(char), Some(search_char)) = (self.peek(direction), search_term.increment_pointer()) {
             if char != search_char { break } 
         }
         
@@ -82,7 +82,7 @@ impl WordGrid {
         found
     }
 
-    fn peek_2(&mut self, direction: &PeekDirection) -> Option<&char> {
+    fn peek(&mut self, direction: &PeekDirection) -> Option<&char> {
 
         let x = self.peek_pointer.0;
         let y = self.peek_pointer.1;
@@ -141,7 +141,7 @@ impl SearchTerm {
         self.pointer = 0;
     }
     
-    pub fn increment_pointer_2(&mut self) -> Option<&char> {
+    pub fn increment_pointer(&mut self) -> Option<&char> {
         self.pointer += 1;
         self.word.get(self.pointer)
     }
